@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Síntesis Comparativa — Paradigmas Lingüísticos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --olive:    #7a7a2a;
+    --olive-l:  #9b9b3a;
+    --olive-ll: #c8c47a;
+    --cream:    #f5f0e4;
+    --sand:     #ede7d0;
+    --rust:     #9b3020;
+    --dark:     #2a2516;
+    --shadow:   rgba(0,0,0,.22);
+    --cell-w:   210px;
+    --cell-h:   155px;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--cream);
+    background-image:
+      radial-gradient(ellipse at 15% 10%, #d4cc9a44 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, #c8a06844 0%, transparent 55%);
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--dark);
+    padding: 2rem 1rem 5rem;
+    user-select: none;
+  }
+
+  header { text-align: center; margin-bottom: 1.8rem; }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+    letter-spacing: .04em;
+  }
+  header p {
+    margin-top: .4rem; font-size: .8rem;
+    color: #7a7060; letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  .toolbar {
+    display: flex; justify-content: center;
+    gap: .6rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .btn {
+    padding: .4rem 1rem; border: 2px solid var(--olive);
+    background: transparent; color: var(--olive);
+    font-family: inherit; font-size: .75rem;
+    letter-spacing: .06em; text-transform: uppercase;
+    cursor: pointer; border-radius: 3px;
+    transition: background .2s, color .2s;
+  }
+  .btn:hover { background: var(--olive); color: #fff; }
+
+  /* ── wrapper: everything lives here, cards float over table ── */
+  #stage {
+    position: relative;   /* cards absolutely positioned here */
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* ── table ── */
+  .table-wrap { flex-shrink: 0; overflow-x: auto; }
+  table { border-collapse: collapse; table-layout: fixed; }
+
+  th.corner { background: transparent; border: none; width: 170px; }
+  th.col-head {
+    width: var(--cell-w);
+    background: var(--olive); color: #f0ead0;
+    font-family: 'Playfair Display', serif;
+    font-size: .88rem; font-weight: 700; letter-spacing: .04em;
+    text-align: center; padding: .65rem .5rem;
+    border: 2px solid #5a5a1a;
+  }
+  td.row-head {
+    width: 170px; background: var(--sand); color: var(--rust);
+    font-style: italic; font-weight: 600; font-size: .78rem;
+    line-height: 1.4; padding: .65rem .75rem;
+    vertical-align: middle; border: 2px solid #ccc4a8;
+  }
+  td.drop-cell {
+    width: var(--cell-w); height: var(--cell-h);
+    border: 2px dashed #b0a87a;
+    background: rgba(255,255,255,.18);
+    transition: background .2s;
+  }
+  td.drop-cell.over {
+    background: rgba(154,154,58,.25);
+    border-color: var(--olive);
+    border-style: solid;
+  }
+  /* ghost label when empty */
+  td.drop-cell::after {
+    content: attr(data-label);
+    display: block; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .6rem; color: #c0b898;
+    letter-spacing: .06em; text-transform: uppercase;
+    pointer-events: none;
+  }
+  td.drop-cell.filled::after { display: none; }
+
+  /* ── free board ── */
+  #board {
+    flex: 1; min-width: 260px; height: 1100px;
+    border: 2px dashed #c5bb9a; border-radius: 6px;
+    background: rgba(255,255,255,.08);
+  }
+  #board-label {
+    position: absolute;
+    font-size: .68rem; color: #b0a87a;
+    letter-spacing: .08em; text-transform: uppercase;
+    pointer-events: none; white-space: nowrap;
+  }
+
+  /* ── cards — always float above everything ── */
+  .card {
+    position: absolute;          /* relative to #stage */
+    width: var(--cell-w);
+    min-height: var(--cell-h);
+    border-radius: 4px;
+    padding: .62rem .72rem;
+    font-size: .74rem; line-height: 1.5;
+    cursor: grab;
+    box-shadow: 2px 3px 12px var(--shadow);
+    transition: box-shadow .15s, transform .12s;
+    /* z-index managed in JS; always above table */
+  }
+  .card:active { cursor: grabbing; }
+  .card.dragging {
+    opacity: .88;
+    box-shadow: 8px 10px 28px var(--shadow);
+    transform: scale(1.04) rotate(1deg);
+  }
+  .card.p1 { background: var(--olive-ll); color: var(--dark); }
+  .card.p2 { background: var(--olive-l);  color: #f0ead0; }
+  .card.p3 { background: var(--olive);    color: #f0ead0; }
+  .card strong { font-weight: 700; }
+  .card em     { font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Síntesis Comparativa</h1>
+  <p>Paradigmas de la Lingüística · Arrastrá las tarjetas para ordenarlas</p>
+</header>
+
+<div class="toolbar">
+  <button class="btn" id="btnShuffle">⇌ Desordenar</button>
+  <button class="btn" id="btnSolve">⊟ Resolver tabla</button>
+</div>
+
+<!-- stage: table + board side by side; cards float over both -->
+<div id="stage">
+
+  <div class="table-wrap">
+    <table id="grid">
+      <thead>
+        <tr>
+          <th class="corner"></th>
+          <th class="col-head">Primer paradigma</th>
+          <th class="col-head">Segundo paradigma</th>
+          <th class="col-head">Tercer paradigma</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-head">Objetivos</td>
+          <td class="drop-cell" id="c11" data-label="P1 · Objetivos"></td>
+          <td class="drop-cell" id="c12" data-label="P2 · Objetivos"></td>
+          <td class="drop-cell" id="c13" data-label="P3 · Objetivos"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Perspectivas teóricas sobre el lenguaje</td>
+          <td class="drop-cell" id="c21" data-label="P1 · Lenguaje"></td>
+          <td class="drop-cell" id="c22" data-label="P2 · Lenguaje"></td>
+          <td class="drop-cell" id="c23" data-label="P3 · Lenguaje"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Perspectivas teóricas sobre relación lengua-cultura</td>
+          <td class="drop-cell" id="c31" data-label="P1 · Lengua-Cultura"></td>
+          <td class="drop-cell" id="c32" data-label="P2 · Lengua-Cultura"></td>
+          <td class="drop-cell" id="c33" data-label="P3 · Lengua-Cultura"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Unidades preferidas de análisis</td>
+          <td class="drop-cell" id="c41" data-label="P1 · Unidades"></td>
+          <td class="drop-cell" id="c42" data-label="P2 · Unidades"></td>
+          <td class="drop-cell" id="c43" data-label="P3 · Unidades"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Funciones comunicativas</td>
+          <td class="drop-cell" id="c51" data-label="P1 · Funciones"></td>
+          <td class="drop-cell" id="c52" data-label="P2 · Funciones"></td>
+          <td class="drop-cell" id="c53" data-label="P3 · Funciones"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Concepción de hablantes y comunidades</td>
+          <td class="drop-cell" id="c61" data-label="P1 · Hablantes"></td>
+          <td class="drop-cell" id="c62" data-label="P2 · Hablantes"></td>
+          <td class="drop-cell" id="c63" data-label="P3 · Hablantes"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Metodología</td>
+          <td class="drop-cell" id="c71" data-label="P1 · Metodología"></td>
+          <td class="drop-cell" id="c72" data-label="P2 · Metodología"></td>
+          <td class="drop-cell" id="c73" data-label="P3 · Metodología"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="board">
+    <span id="board-label">zona libre</span>
+  </div>
+
+</div><!-- /stage -->
+
+<script>
+const CELLS = [
+  { id:'d11', para:'p1', slot:'c11',
+    body:'Documentación, descripción y clasificación de las lenguas en retracción.<br><br>Interés en las relaciones genéticas de las lenguas, búsqueda de un tronco común.' },
+  { id:'d12', para:'p2', slot:'c12',
+    body:'Estudio del uso de la lengua entre hablantes (interacciones situadas) y en actividades diversas (eventos de habla).<br><br>Énfasis en la comunicación, en las condiciones necesarias para que interactúen hablantes de lenguas no relacionadas.' },
+  { id:'d13', para:'p3', slot:'c13',
+    body:'Estudio de prácticas lingüísticas para documentar y analizar la reproducción y transformación de personas, instituciones y comunidades en diferentes tiempos y espacios.' },
+
+  { id:'d21', para:'p1', slot:'c21',
+    body:'Foco en la LENGUA (CÓDIGO) como sistema <em>formal, arbitrario</em> e <em>inmotivado</em>. Análisis centrado en la gramática y el léxico.' },
+  { id:'d22', para:'p2', slot:'c22',
+    body:'Foco en el <strong>HABLA</strong>. Usos sistemáticos del habla en su contexto sociocultural (reglas que organizan esos usos). Lengua concebida como <strong>praxis social</strong>.' },
+  { id:'d23', para:'p3', slot:'c23',
+    body:'La lengua entendida como un PROCESO SOCIAL. Un producto interaccional cargado de valores indexicales (incluidos los ideológicos).' },
+
+  { id:'d31', para:'p1', slot:'c31',
+    body:'Lengua concebida como <strong><em>ventana al pensamiento</em></strong>. Interés en los sistemas de clasificación.' },
+  { id:'d32', para:'p2', slot:'c32',
+    body:'Lengua organizada culturalmente y organizadora de lo social. Relación de las lenguas con categorías sociales y culturales.<br><strong>Relación lengua y cultura</strong>: en el <strong>discurso</strong> y el <strong>arte verbal</strong>.' },
+  { id:'d33', para:'p3', slot:'c33',
+    body:'Lengua como recurso semiótico para <strong>acceder a los problemas sociales</strong>: de la noción de persona, identidades, comunidades.' },
+
+  { id:'d41', para:'p1', slot:'c41',
+    body:'Unidades segmentables: fonema, morfema, palabra, oración, textos fijos (narrativas míticas, cuentos tradicionales).' },
+  { id:'d42', para:'p2', slot:'c42',
+    body:'<strong>Comunidad de habla, evento de habla</strong>, actos de habla, géneros, repertorios y variedades lingüísticas.' },
+  { id:'d43', para:'p3', slot:'c43',
+    body:'Prácticas lingüísticas, marcos de participación, concepción(es) de sujeto/persona/identidad.' },
+
+  { id:'d51', para:'p1', slot:'c51',
+    body:'Signos <strong>unifuncionales</strong>, centrado en la función <strong>referencial</strong> del lenguaje.' },
+  { id:'d52', para:'p2', slot:'c52',
+    body:'<strong>Signos multifuncionales</strong>: funciones poética, fática, indexical, etc.' },
+  { id:'d53', para:'p3', slot:'c53',
+    body:'<strong>Signos multifuncionales</strong>: función indexical.' },
+
+  { id:'d61', para:'p1', slot:'c61',
+    body:'Comunidades lingüísticas homogéneas. Monolingüismo.' },
+  { id:'d62', para:'p2', slot:'c62',
+    body:'Comunidades de habla, redes sociales. Multilingüismo. Interés en la diversidad, la heterogeneidad y el contacto de lenguas.' },
+  { id:'d63', para:'p3', slot:'c63',
+    body:'Hablantes como agentes de transformación social y comunidades atravesadas por relaciones de poder.' },
+
+  { id:'d71', para:'p1', slot:'c71',
+    body:'<strong>Elicitación</strong> y traducción de léxico, paradigmas gramaticales y textos fijos. Informante <strong>calificado</strong>; Trabajo de campo <em>SOBRE</em> una lengua o grupo social.' },
+  { id:'d72', para:'p2', slot:'c72',
+    body:'Observación participante, registro de habla espontánea. Textos concebidos como "proceso" (ejecución o puesta en uso de formas discursivas). Trabajo de campo <em><strong>PARA, CON o POR</strong></em> una comunidad de habla.' },
+  { id:'d73', para:'p3', slot:'c73',
+    body:'Análisis socio-histórico. Documentación audiovisual de interacciones. Trabajo de campo <em><strong>CON o POR</strong></em> hablantes/actores sociales de una comunidad de habla.' },
+];
+
+// slot → card id mapping (null = empty)
+const slotCard = {};
+CELLS.forEach(c => slotCard[c.slot] = null);
+
+const stage = document.getElementById('stage');
+const board = document.getElementById('board');
+let zTop = 200;
+
+// ── helpers ──────────────────────────────────────────────
+function stageOffset() {
+  return stage.getBoundingClientRect();
+}
+
+function cellPos(id) {
+  // returns {x,y} of card when placed in slot, relative to stage
+  const slot = document.getElementById(id);
+  const sr   = slot.getBoundingClientRect();
+  const st   = stageOffset();
+  return { x: sr.left - st.left, y: sr.top - st.top };
+}
+
+function randomBoardPos() {
+  const br = board.getBoundingClientRect();
+  const st = stageOffset();
+  const ox = br.left - st.left;
+  const oy = br.top  - st.top;
+  const bw = br.width  || 280;
+  const bh = br.height || 1100;
+  return {
+    x: ox + 16 + Math.random() * Math.max(10, bw - 240),
+    y: oy + 40 + Math.random() * Math.max(10, bh - 180),
+  };
+}
+
+function moveCardTo(el, x, y) {
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+}
+
+// ── build ────────────────────────────────────────────────
+function buildCard({id, para, body}) {
+  const el = document.createElement('div');
+  el.className = `card ${para}`;
+  el.id = id;
+  el.innerHTML = body;
+  el.style.zIndex = zTop++;
+  stage.appendChild(el);   // always child of stage
+  return el;
+}
+
+function snapToSlot(el, slotId) {
+  // displace any existing card
+  const prev = slotCard[slotId];
+  if (prev && prev !== el.id) {
+    const prevEl = document.getElementById(prev);
+    const pos = randomBoardPos();
+    moveCardTo(prevEl, pos.x, pos.y);
+    slotCard[slotId] = null;
+    // unmark old slot
+    document.getElementById(slotId).classList.remove('filled');
+  }
+  // unmark previous slot of this card
+  for (const [sid, cid] of Object.entries(slotCard)) {
+    if (cid === el.id) {
+      slotCard[sid] = null;
+      document.getElementById(sid).classList.remove('filled');
+    }
+  }
+  const pos = cellPos(slotId);
+  moveCardTo(el, pos.x, pos.y);
+  el.style.width = document.getElementById(slotId).offsetWidth + 'px';
+  slotCard[slotId] = el.id;
+  document.getElementById(slotId).classList.add('filled');
+}
+
+// ── drag ─────────────────────────────────────────────────
+function makeDraggable(el) {
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, {passive: false});
+
+  function onDown(e) {
+    if (e.cancelable) e.preventDefault();
+    el.style.zIndex = ++zTop;
+    el.classList.add('dragging');
+    el.style.width = '';   // free width while dragging
+
+    const touch  = e.touches ? e.touches[0] : e;
+    const startX = touch.clientX - el.getBoundingClientRect().left;
+    const startY = touch.clientY - el.getBoundingClientRect().top;
+    const st     = stageOffset();
+
+    // highlight slots
+    document.querySelectorAll('td.drop-cell').forEach(s => s.classList.add('over'));
+
+    function onMove(e) {
+      if (e.cancelable) e.preventDefault();
+      const t = e.touches ? e.touches[0] : e;
+      el.style.left = (t.clientX - st.left - startX) + 'px';
+      el.style.top  = (t.clientY - st.top  - startY) + 'px';
+    }
+
+    function onUp(e) {
+      el.classList.remove('dragging');
+      document.querySelectorAll('td.drop-cell').forEach(s => s.classList.remove('over'));
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+      document.removeEventListener('touchend',  onUp);
+
+      // hit-test slots
+      const er = el.getBoundingClientRect();
+      const cx = er.left + er.width  / 2;
+      const cy = er.top  + er.height / 2;
+
+      let hit = null;
+      document.querySelectorAll('td.drop-cell').forEach(slot => {
+        const sr = slot.getBoundingClientRect();
+        if (cx >= sr.left && cx <= sr.right && cy >= sr.top && cy <= sr.bottom) {
+          hit = slot.id;
+        }
+      });
+
+      if (hit) {
+        snapToSlot(el, hit);
+      } else {
+        // unmark any slot this card was in
+        for (const [sid, cid] of Object.entries(slotCard)) {
+          if (cid === el.id) {
+            slotCard[sid] = null;
+            document.getElementById(sid).classList.remove('filled');
+          }
+        }
+        el.style.width = '';
+      }
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, {passive: false});
+    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('touchend',  onUp);
+  }
+}
+
+// ── init ─────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // position board label
+  const br = board.getBoundingClientRect();
+  const st = stageOffset();
+  const lbl = document.getElementById('board-label');
+  lbl.style.left = (br.left - st.left + br.width/2) + 'px';
+  lbl.style.top  = (br.top  - st.top  + 8) + 'px';
+  lbl.style.transform = 'translateX(-50%)';
+
+  CELLS.forEach(c => {
+    const el  = buildCard(c);
+    const pos = randomBoardPos();
+    moveCardTo(el, pos.x, pos.y);
+    makeDraggable(el);
+  });
+});
+
+// ── buttons ──────────────────────────────────────────────
+document.getElementById('btnShuffle').addEventListener('click', () => {
+  Object.keys(slotCard).forEach(sid => {
+    slotCard[sid] = null;
+    document.getElementById(sid).classList.remove('filled');
+  });
+  CELLS.forEach(({id}) => {
+    const el  = document.getElementById(id);
+    el.style.width = '';
+    const pos = randomBoardPos();
+    moveCardTo(el, pos.x, pos.y);
+  });
+});
+
+document.getElementById('btnSolve').addEventListener('click', () => {
+  CELLS.forEach(({id, slot}) => {
+    snapToSlot(document.getElementById(id), slot);
+  });
+});
+</script>
+</body>
+</html>
