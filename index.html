@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Síntesis Comparativa — Paradigmas Lingüísticos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --olive:    #7a7a2a;
+    --olive-l:  #9b9b3a;
+    --olive-ll: #c8c47a;
+    --cream:    #f5f0e4;
+    --sand:     #ede7d0;
+    --rust:     #9b3020;
+    --dark:     #2a2516;
+    --shadow:   rgba(0,0,0,.22);
+    --cell-w:   220px;
+    --cell-h:   160px;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--cream);
+    background-image:
+      radial-gradient(ellipse at 15% 10%, #d4cc9a44 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, #c8a06844 0%, transparent 55%);
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--dark);
+    padding: 2rem 1rem 5rem;
+    user-select: none;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 1.8rem;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+    letter-spacing: .04em;
+  }
+  header p {
+    margin-top: .4rem;
+    font-size: .8rem;
+    color: #7a7060;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    gap: .6rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: .4rem 1rem;
+    border: 2px solid var(--olive);
+    background: transparent;
+    color: var(--olive);
+    font-family: inherit;
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background .2s, color .2s;
+  }
+  .btn:hover { background: var(--olive); color: #fff; }
+
+  .layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .table-wrap { flex-shrink: 0; overflow-x: auto; }
+
+  table { border-collapse: collapse; table-layout: fixed; }
+
+  th.corner {
+    background: transparent;
+    border: none;
+    width: 170px;
+  }
+  th.col-head {
+    width: var(--cell-w);
+    background: var(--olive);
+    color: #f0ead0;
+    font-family: 'Playfair Display', serif;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-align: center;
+    padding: .7rem .5rem;
+    border: 2px solid #5a5a1a;
+  }
+  td.row-head {
+    width: 170px;
+    background: var(--sand);
+    color: var(--rust);
+    font-style: italic;
+    font-weight: 600;
+    font-size: .8rem;
+    line-height: 1.4;
+    padding: .7rem .75rem;
+    vertical-align: middle;
+    border: 2px solid #ccc4a8;
+  }
+  td.drop-cell {
+    width: var(--cell-w);
+    height: var(--cell-h);
+    border: 2px dashed #b0a87a;
+    vertical-align: top;
+    position: relative;
+    background: rgba(255,255,255,.18);
+    transition: background .2s;
+  }
+  td.drop-cell.over {
+    background: rgba(154,154,58,.18);
+    border-color: var(--olive);
+  }
+  td.drop-cell::after {
+    content: attr(data-label);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .62rem;
+    color: #bbb49a;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  td.drop-cell.filled::after { display: none; }
+
+  #board {
+    flex: 1;
+    min-width: 280px;
+    height: 900px;
+    position: relative;
+    border: 2px dashed #c5bb9a;
+    border-radius: 6px;
+    background: rgba(255,255,255,.1);
+    overflow: hidden;
+  }
+  .board-label {
+    position: absolute;
+    top: .5rem; left: 50%;
+    transform: translateX(-50%);
+    font-size: .68rem;
+    color: #b0a87a;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .card {
+    position: absolute;
+    width: calc(var(--cell-w) - 4px);
+    min-height: calc(var(--cell-h) - 4px);
+    border-radius: 4px;
+    padding: .65rem .75rem .6rem;
+    cursor: grab;
+    box-shadow: 2px 3px 10px var(--shadow);
+    transition: box-shadow .15s, transform .15s, opacity .15s;
+    will-change: transform;
+    font-size: .75rem;
+    line-height: 1.5;
+  }
+  .card:active { cursor: grabbing; }
+  .card.dragging {
+    opacity: .85;
+    box-shadow: 6px 8px 24px var(--shadow);
+    transform: scale(1.04) rotate(1deg);
+    z-index: 9999 !important;
+  }
+  .card.p1 { background: var(--olive-ll); color: var(--dark); }
+  .card.p2 { background: var(--olive-l);  color: #f0ead0; }
+  .card.p3 { background: var(--olive);    color: #f0ead0; }
+  .card strong { font-weight: 700; }
+  .card em     { font-style: italic; }
+
+  td.drop-cell .card {
+    position: relative;
+    width: 100%;
+    min-height: calc(var(--cell-h) - 4px);
+    box-shadow: none;
+    border-radius: 2px;
+  }
+  td.drop-cell .card:active {
+    box-shadow: 4px 4px 16px var(--shadow);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Síntesis Comparativa</h1>
+  <p>Paradigmas de la Lingüística · Arrastrá las tarjetas para ordenarlas</p>
+</header>
+
+<div class="toolbar">
+  <button class="btn" id="btnShuffle">⇌ Desordenar</button>
+  <button class="btn" id="btnSolve">⊟ Resolver tabla</button>
+</div>
+
+<div class="layout">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="corner"></th>
+          <th class="col-head">Primer paradigma</th>
+          <th class="col-head">Segundo paradigma</th>
+          <th class="col-head">Tercer paradigma</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-head">Objetivos</td>
+          <td class="drop-cell" id="c11" data-label="P1 · Objetivos"></td>
+          <td class="drop-cell" id="c12" data-label="P2 · Objetivos"></td>
+          <td class="drop-cell" id="c13" data-label="P3 · Objetivos"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Perspectivas teóricas sobre el lenguaje</td>
+          <td class="drop-cell" id="c21" data-label="P1 · Lenguaje"></td>
+          <td class="drop-cell" id="c22" data-label="P2 · Lenguaje"></td>
+          <td class="drop-cell" id="c23" data-label="P3 · Lenguaje"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Perspectivas teóricas sobre relación lengua-cultura</td>
+          <td class="drop-cell" id="c31" data-label="P1 · Lengua-Cultura"></td>
+          <td class="drop-cell" id="c32" data-label="P2 · Lengua-Cultura"></td>
+          <td class="drop-cell" id="c33" data-label="P3 · Lengua-Cultura"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Unidades preferidas de análisis</td>
+          <td class="drop-cell" id="c41" data-label="P1 · Unidades"></td>
+          <td class="drop-cell" id="c42" data-label="P2 · Unidades"></td>
+          <td class="drop-cell" id="c43" data-label="P3 · Unidades"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Funciones comunicativas</td>
+          <td class="drop-cell" id="c51" data-label="P1 · Funciones"></td>
+          <td class="drop-cell" id="c52" data-label="P2 · Funciones"></td>
+          <td class="drop-cell" id="c53" data-label="P3 · Funciones"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Concepción de hablantes y comunidades</td>
+          <td class="drop-cell" id="c61" data-label="P1 · Hablantes"></td>
+          <td class="drop-cell" id="c62" data-label="P2 · Hablantes"></td>
+          <td class="drop-cell" id="c63" data-label="P3 · Hablantes"></td>
+        </tr>
+        <tr>
+          <td class="row-head">Metodología</td>
+          <td class="drop-cell" id="c71" data-label="P1 · Metodología"></td>
+          <td class="drop-cell" id="c72" data-label="P2 · Metodología"></td>
+          <td class="drop-cell" id="c73" data-label="P3 · Metodología"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="board"><span class="board-label">zona libre · arrastrá desde acá</span></div>
+</div>
+
+<script>
+const CELLS = [
+  // Objetivos
+  { id:'d11', para:'p1', slot:'c11',
+    body:'Documentación, descripción y clasificación de las lenguas en retracción.<br><br>Interés en las relaciones genéticas de las lenguas, búsqueda de un tronco común.' },
+  { id:'d12', para:'p2', slot:'c12',
+    body:'Estudio del uso de la lengua entre hablantes (interacciones situadas) y en actividades diversas (eventos de habla).<br><br>Énfasis en la comunicación, en las condiciones necesarias para que interactúen hablantes de lenguas no relacionadas.' },
+  { id:'d13', para:'p3', slot:'c13',
+    body:'Estudio de prácticas lingüísticas para documentar y analizar la reproducción y transformación de personas, instituciones y comunidades en diferentes tiempos y espacios.' },
+
+  // Perspectivas teóricas sobre el lenguaje
+  { id:'d21', para:'p1', slot:'c21',
+    body:'Foco en la LENGUA (CÓDIGO) como sistema <em>formal, arbitrario</em> e <em>inmotivado</em>. Análisis centrado en la gramática y el léxico.' },
+  { id:'d22', para:'p2', slot:'c22',
+    body:'Foco en el <strong>HABLA</strong>. Usos sistemáticos del habla en su contexto sociocultural (reglas que organizan esos usos). Lengua concebida como <strong>praxis social</strong>.' },
+  { id:'d23', para:'p3', slot:'c23',
+    body:'La lengua entendida como un PROCESO SOCIAL. Un producto interaccional cargado de valores indexicales (incluidos los ideológicos).' },
+
+  // Perspectivas teóricas sobre relación lengua-cultura
+  { id:'d31', para:'p1', slot:'c31',
+    body:'Lengua concebida como <strong><em>ventana al pensamiento</em></strong>. Interés en los sistemas de clasificación.' },
+  { id:'d32', para:'p2', slot:'c32',
+    body:'Lengua organizada culturalmente y organizadora de lo social. Relación de las lenguas con categorías sociales y culturales.<br><strong>Relación lengua y cultura</strong>: en el <strong>discurso</strong> y el <strong>arte verbal</strong>.' },
+  { id:'d33', para:'p3', slot:'c33',
+    body:'Lengua como recurso semiótico para <strong>acceder a los problemas sociales</strong>: de la noción de persona, identidades, comunidades.' },
+
+  // Unidades preferidas de análisis
+  { id:'d41', para:'p1', slot:'c41',
+    body:'Unidades segmentables: fonema, morfema, palabra, oración, textos fijos (narrativas míticas, cuentos tradicionales).' },
+  { id:'d42', para:'p2', slot:'c42',
+    body:'<strong>Comunidad de habla, evento de habla</strong>, actos de habla, géneros, repertorios y variedades lingüísticas.' },
+  { id:'d43', para:'p3', slot:'c43',
+    body:'Prácticas lingüísticas, marcos de participación, concepción(es) de sujeto/persona/identidad.' },
+
+  // Funciones comunicativas
+  { id:'d51', para:'p1', slot:'c51',
+    body:'Signos <strong>unifuncionales</strong>, centrado en la función <strong>referencial</strong> del lenguaje.' },
+  { id:'d52', para:'p2', slot:'c52',
+    body:'<strong>Signos multifuncionales</strong>: funciones poética, fática, indexical, etc.' },
+  { id:'d53', para:'p3', slot:'c53',
+    body:'<strong>Signos multifuncionales</strong>: función indexical.' },
+
+  // Concepción de hablantes y comunidades
+  { id:'d61', para:'p1', slot:'c61',
+    body:'Comunidades lingüísticas homogéneas. Monolingüismo.' },
+  { id:'d62', para:'p2', slot:'c62',
+    body:'Comunidades de habla, redes sociales. Multilingüismo. Interés en la diversidad, la heterogeneidad y el contacto de lenguas.' },
+  { id:'d63', para:'p3', slot:'c63',
+    body:'Hablantes como agentes de transformación social y comunidades atravesadas por relaciones de poder.' },
+
+  // Metodología
+  { id:'d71', para:'p1', slot:'c71',
+    body:'<strong>Elicitación</strong> y traducción de léxico, paradigmas gramaticales y textos fijos. Informante <strong>calificado</strong>; Trabajo de campo <em>SOBRE</em> una lengua o grupo social.' },
+  { id:'d72', para:'p2', slot:'c72',
+    body:'Observación participante, registro de habla espontánea. Textos concebidos como "proceso" (ejecución o puesta en uso de formas discursivas). Trabajo de campo <em><strong>PARA, CON o POR</strong></em> una comunidad de habla.' },
+  { id:'d73', para:'p3', slot:'c73',
+    body:'Análisis socio-histórico. Documentación audiovisual de interacciones. Trabajo de campo <em><strong>CON o POR</strong></em> hablantes/actores sociales de una comunidad de habla.' },
+];
+
+const board = document.getElementById('board');
+let zTop = 100;
+
+function buildCard({id, para, body}) {
+  const el = document.createElement('div');
+  el.className = `card ${para}`;
+  el.id = id;
+  el.innerHTML = body;
+  el.style.zIndex = zTop++;
+  return el;
+}
+
+function placeOnBoard(el) {
+  const bw = board.offsetWidth  || 320;
+  const bh = board.offsetHeight || 900;
+  el.style.left = (20 + Math.random() * Math.max(10, bw - 240)) + 'px';
+  el.style.top  = (40 + Math.random() * Math.max(10, bh - 180)) + 'px';
+  board.appendChild(el);
+}
+
+function placeInSlot(el, slotId) {
+  const slot = document.getElementById(slotId);
+  if (!slot) return;
+  const existing = slot.querySelector('.card');
+  if (existing && existing !== el) placeOnBoard(existing);
+  el.style.left = '';
+  el.style.top  = '';
+  el.style.zIndex = '';
+  slot.appendChild(el);
+  slot.classList.add('filled');
+}
+
+function makeDraggable(el) {
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, {passive: false});
+
+  function onDown(e) {
+    if (e.cancelable) e.preventDefault();
+    el.style.zIndex = ++zTop;
+
+    const parentSlot = el.closest('td.drop-cell');
+    if (parentSlot) {
+      const rect = el.getBoundingClientRect();
+      const boardRect = board.getBoundingClientRect();
+      el.style.left = (rect.left - boardRect.left) + 'px';
+      el.style.top  = (rect.top  - boardRect.top)  + 'px';
+      board.appendChild(el);
+      parentSlot.classList.remove('filled');
+    }
+
+    el.classList.add('dragging');
+    const touch = e.touches ? e.touches[0] : e;
+    const startX = touch.clientX - el.offsetLeft;
+    const startY = touch.clientY - el.offsetTop;
+
+    document.querySelectorAll('td.drop-cell').forEach(s => s.style.outline = '2px dashed #9b9b3a');
+
+    function onMove(e) {
+      if (e.cancelable) e.preventDefault();
+      const t = e.touches ? e.touches[0] : e;
+      el.style.left = (t.clientX - startX) + 'px';
+      el.style.top  = (t.clientY - startY) + 'px';
+    }
+
+    function onUp() {
+      el.classList.remove('dragging');
+      document.querySelectorAll('td.drop-cell').forEach(s => s.style.outline = '');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+      document.removeEventListener('touchend',  onUp);
+
+      const cardRect = el.getBoundingClientRect();
+      const cx = cardRect.left + cardRect.width  / 2;
+      const cy = cardRect.top  + cardRect.height / 2;
+
+      let landed = false;
+      document.querySelectorAll('td.drop-cell').forEach(slot => {
+        const sr = slot.getBoundingClientRect();
+        if (cx >= sr.left && cx <= sr.right && cy >= sr.top && cy <= sr.bottom) {
+          placeInSlot(el, slot.id);
+          landed = true;
+        }
+      });
+
+      if (!landed) {
+        const br = board.getBoundingClientRect();
+        el.style.left = Math.max(0, Math.min(br.width  - el.offsetWidth,  parseFloat(el.style.left))) + 'px';
+        el.style.top  = Math.max(0, Math.min(br.height - el.offsetHeight, parseFloat(el.style.top)))  + 'px';
+      }
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, {passive: false});
+    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('touchend',  onUp);
+  }
+}
+
+window.addEventListener('load', () => {
+  CELLS.forEach(c => {
+    const el = buildCard(c);
+    placeOnBoard(el);
+    makeDraggable(el);
+  });
+});
+
+document.getElementById('btnShuffle').addEventListener('click', () => {
+  CELLS.forEach(({id}) => {
+    const el = document.getElementById(id);
+    const parentSlot = el.closest('td.drop-cell');
+    if (parentSlot) parentSlot.classList.remove('filled');
+    placeOnBoard(el);
+  });
+});
+
+document.getElementById('btnSolve').addEventListener('click', () => {
+  CELLS.forEach(({id, slot}) => {
+    const el = document.getElementById(id);
+    const parentSlot = el.closest('td.drop-cell');
+    if (parentSlot) parentSlot.classList.remove('filled');
+    placeInSlot(el, slot);
+  });
+});
+</script>
+</body>
+</html>
